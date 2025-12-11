@@ -296,42 +296,38 @@ elif page == "Dropout Predictor":
 st.subheader("Feature Importance (SHAP)")
 
 try:
-    # 1. Build SHAP explainer on the model inside your pipeline
-    #    (change 'model' here if your pipeline step has a different name)
-    model = pipeline.named_steps["model"] if "model" in pipeline.named_steps else pipeline
+    # Use the same input row used for prediction
+    input_df = participant_df  # <-- use your existing dataframe
 
-    # Use a small “background” sample; for one-off demo you can reuse the same row
+    # Extract model (if pipeline has a final named step)
+    if "model" in pipeline.named_steps:
+        model = pipeline.named_steps["model"]
+    else:
+        model = pipeline  # fallback
+
+    # Build SHAP explainer
     explainer = shap.Explainer(model)
 
-    # 2. Get SHAP values for this participant
+    # Compute SHAP values for this row
     shap_values = explainer(input_df)
 
-    # 3. Extract values and real feature names
-    shap_vals = shap_values[0].values          # SHAP values for this one row
-    feature_names = np.array(input_df.columns) # ['age', 'BMI', 'visit2_adherence_rate', ...]
+    # Pull values & feature names
+    shap_vals = shap_values[0].values
+    feature_names = input_df.columns
 
-    # 4. Sort features by absolute impact
-    abs_vals = np.abs(shap_vals)
-    sorted_idx = np.argsort(abs_vals)[::-1]    # descending
-    top_n = 10                                 # show top 10
-    top_idx = sorted_idx[:top_n]
+    # Sort features by absolute importance
+    sorted_idx = np.argsort(np.abs(shap_vals))[::-1][:10]  # top 10
 
-    top_shap = shap_vals[top_idx]
-    top_feats = feature_names[top_idx]
+    top_vals = shap_vals[sorted_idx]
+    top_features = feature_names[sorted_idx]
 
-    # 5. Make a horizontal bar plot with YOUR feature names
+    # Make a SHAP bar chart
     fig, ax = plt.subplots()
-    ax.barh(range(len(top_shap)), top_shap)
-    ax.set_yticks(range(len(top_shap)))
-    ax.set_yticklabels(top_feats)
-    ax.invert_yaxis()  # biggest at top
+    ax.barh(top_features, top_vals)
     ax.set_xlabel("SHAP value (impact on model output)")
     ax.set_title("Top Feature Contributions for This Prediction")
-
+    ax.invert_yaxis()
     st.pyplot(fig)
 
 except Exception as e:
     st.warning(f"Could not render SHAP feature importance: {e}")
-
-
-           
