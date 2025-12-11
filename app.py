@@ -46,10 +46,12 @@ page = st.sidebar.radio("Go to:", ["Home", "Resume", "Projects", "Dropout Predic
 # ---------------------------------------------------------------
 if page == "Home":
     st.title("Welcome – Gbolahan Oladosu")
-if os.path.exists("assets/headshot.jpg"):
-    st.image("assets/headshot.jpg", width=220)
-else:
-    st.info("Headshot image coming soon.")
+    
+    if os.path.exists("assets/headshot.jpg"):
+        st.image("assets/headshot.jpg", width=220)
+    else:
+        st.info("Headshot image coming soon.")
+
     st.subheader("Clinical Laboratory Scientist → Aspiring Clinical Data Scientist")
 
     st.markdown("""
@@ -92,12 +94,10 @@ elif page == "Resume":
     - Machine learning interpretability
     - Clinical and healthcare analytics
     """)
-
-if os.path.exists("assets/project_image.png"):
-    st.image("assets/project_image.png", caption="Clinical Trial Analytics Dashboard")
-else:
-    st.info("Project image coming soon.")
-
+    if os.path.exists("assets/project_image.png"):
+        st.image("assets/project_image.png", caption="Clinical Trial Analytics Dashboard")
+    else:
+        st.info("Project image coming soon.")
 
 
 # ---------------------------------------------------------------
