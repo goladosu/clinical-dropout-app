@@ -14,6 +14,67 @@ import joblib
 import shap
 import matplotlib.pyplot as plt
 
+from sklearn.base import BaseEstimator, TransformerMixin  # needed for the custom transformer
+
+# ============================
+# 1. Custom Transformers
+# ============================
+
+class ClinicalConsistencyTransformer(BaseEstimator, TransformerMixin):
+    """
+    1. Age cleaning:
+       - Any age < min_age is set to min_age (assume all participants are adults).
+
+    2. Visit logic:
+       - If ALL Visit 1 variables are missing, clear ALL Visit 2 variables to NaN.
+       - This only triggers when visit1_symptom_score, visit1_adherence_rate, and visit1_AE_count
+         are ALL NaN. If symptom is present (your 150-row case), nothing is touched.
+    """
+    def __init__(self,
+                 visit1_cols=None,
+                 visit2_cols=None,
+                 age_col='age',
+                 min_age=18):
+        self.visit1_cols = visit1_cols or [
+            'visit1_symptom_score',
+            'visit1_adherence_rate',
+            'visit1_AE_count'
+        ]
+        self.visit2_cols = visit2_cols or [
+            'visit2_symptom_score',
+            'visit2_adherence_rate',
+            'visit2_AE_count'
+        ]
+        self.age_col = age_col
+        self.min_age = min_age
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X, y=None):
+        X = X.copy()
+
+        # --- Age cleaning ---
+        if self.age_col in X.columns:
+            mask_age = X[self.age_col] < self.min_age
+            X.loc[mask_age, self.age_col] = self.min_age
+
+        # --- Visit logic: only when ALL visit1 vars are missing ---
+        v1_cols = [c for c in self.visit1_cols if c in X.columns]
+        v2_cols = [c for c in self.visit2_cols if c in X.columns]
+
+        if v1_cols and v2_cols:
+            no_v1_mask = X[v1_cols].isna().all(axis=1)
+            X.loc[no_v1_mask, v2_cols] = np.nan
+
+        return X
+
+
+sys.modules["main"] = sys.modules[__name__]
+
+
+
+
 # ---------------------------------------------------------------
 # Page config
 # ---------------------------------------------------------------
