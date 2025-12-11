@@ -1,9 +1,9 @@
 streamlit
 joblib
-scikit-learn
+scikit-learn ==1.6.1
 numpy
 pandas
 matplotlib
 xgboost
 shap
-imbalanced-learn
+imbalanced-learn ==0.14.0
