@@ -71,6 +71,30 @@ class ClinicalConsistencyTransformer(BaseEstimator, TransformerMixin):
         return X
 
 
+class MissingIndicatorAdder(BaseEstimator, TransformerMixin):
+    """
+    Adds *_missing indicator columns (0/1) for selected columns.
+    Example: visit1_adherence_rate -> visit1_adherence_rate_missing
+    """
+    def __init__(self, columns):
+        self.columns = columns
+
+    def fit(self, X, y=None):
+        # nothing to learn
+        return self
+
+    def transform(self, X, y=None):
+        X = X.copy()
+        for col in self.columns:
+            if col in X.columns:
+                X[col + "_missing"] = X[col].isna().astype(int)
+        return X
+
+
+
+
+
+
 sys.modules["main"] = sys.modules[__name__]
 
 
