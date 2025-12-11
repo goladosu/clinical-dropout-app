@@ -142,10 +142,8 @@ elif page == "Dropout Predictor":
     st.title("Clinical Trial Dropout Predictor")
 
     if pipeline is None:
-    st.error("Model not loaded. See messages above for details (missing file or load error).")
+        st.error("Model not loaded. See messages above for details (missing file or load error).")
     else:
-    # use the model...
-
         st.markdown("Enter participant information below:")
 
         age = st.number_input("Age", min_value=18, max_value=100, value=65)
