@@ -292,7 +292,7 @@ elif page == "Dropout Predictor":
             shap_values = explainer.shap_values(X_prep)
 
             st.subheader("Feature Importance (SHAP)")
-            shap.initjs()
+            #shap.initjs()
             fig, ax = plt.subplots(figsize=(8,4))
             shap.bar_plot(shap_values[0], max_display=10, show=False)
             st.pyplot(fig)
