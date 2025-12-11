@@ -33,6 +33,11 @@ def load_model():
 
 pipeline = load_model()
 
+# DEBUG: Show working directory and file contents
+st.write("📂 Current working directory:", os.getcwd())
+st.write("📄 Files in this directory:", os.listdir("."))
+st.write("🗂 Assets folder:", os.listdir("assets") if os.path.exists("assets") else "assets NOT found")
+
 
 # ---------------------------------------------------------------
 # Navigation
