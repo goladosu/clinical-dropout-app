@@ -291,8 +291,47 @@ elif page == "Dropout Predictor":
             explainer = shap.TreeExplainer(model)
             shap_values = explainer.shap_values(X_prep)
 
-            st.subheader("Feature Importance (SHAP)")
-            #shap.initjs()
-            fig, ax = plt.subplots(figsize=(8,4))
-            shap.bar_plot(shap_values[0], max_display=10, show=False)
-            st.pyplot(fig)
+
+
+st.subheader("Feature Importance (SHAP)")
+
+try:
+    # 1. Build SHAP explainer on the model inside your pipeline
+    #    (change 'model' here if your pipeline step has a different name)
+    model = pipeline.named_steps["model"] if "model" in pipeline.named_steps else pipeline
+
+    # Use a small “background” sample; for one-off demo you can reuse the same row
+    explainer = shap.Explainer(model)
+
+    # 2. Get SHAP values for this participant
+    shap_values = explainer(input_df)
+
+    # 3. Extract values and real feature names
+    shap_vals = shap_values[0].values          # SHAP values for this one row
+    feature_names = np.array(input_df.columns) # ['age', 'BMI', 'visit2_adherence_rate', ...]
+
+    # 4. Sort features by absolute impact
+    abs_vals = np.abs(shap_vals)
+    sorted_idx = np.argsort(abs_vals)[::-1]    # descending
+    top_n = 10                                 # show top 10
+    top_idx = sorted_idx[:top_n]
+
+    top_shap = shap_vals[top_idx]
+    top_feats = feature_names[top_idx]
+
+    # 5. Make a horizontal bar plot with YOUR feature names
+    fig, ax = plt.subplots()
+    ax.barh(range(len(top_shap)), top_shap)
+    ax.set_yticks(range(len(top_shap)))
+    ax.set_yticklabels(top_feats)
+    ax.invert_yaxis()  # biggest at top
+    ax.set_xlabel("SHAP value (impact on model output)")
+    ax.set_title("Top Feature Contributions for This Prediction")
+
+    st.pyplot(fig)
+
+except Exception as e:
+    st.warning(f"Could not render SHAP feature importance: {e}")
+
+
+           
