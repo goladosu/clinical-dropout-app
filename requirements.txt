@@ -6,3 +6,4 @@ pandas
 matplotlib
 xgboost
 shap
+imbalanced-learn
