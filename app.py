@@ -25,11 +25,23 @@ st.set_page_config(page_title="Gbolahan Oladosu – Portfolio", layout="wide")
 # ---------------------------------------------------------------
 @st.cache_resource
 def load_model():
-    try:
-        pipeline = joblib.load("xgb_dropout_pipeline.pkl")
-        return pipeline
-    except:
+    model_path = "xgb_dropout_pipeline.pkl"
+
+    # Check if the file exists first
+    if not os.path.exists(model_path):
+        st.error(f"Model file not found at: {model_path}")
+        st.write("📂 Current working directory:", os.getcwd())
+        st.write("📄 Files in this directory:", os.listdir("."))
         return None
+
+    try:
+        pipeline = joblib.load(model_path)
+        st.success("✅ Model loaded successfully.")
+        return pipeline
+    except Exception as e:
+        st.error(f"❌ Failed to load model: {e}")
+        return None
+
 
 pipeline = load_model()
 
@@ -130,8 +142,10 @@ elif page == "Dropout Predictor":
     st.title("Clinical Trial Dropout Predictor")
 
     if pipeline is None:
-        st.error("No model file found. Upload xgb_dropout_pipeline.pkl to your project folder.")
+    st.error("Model not loaded. See messages above for details (missing file or load error).")
     else:
+    # use the model...
+
         st.markdown("Enter participant information below:")
 
         age = st.number_input("Age", min_value=18, max_value=100, value=65)
