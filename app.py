@@ -146,7 +146,7 @@ page = st.sidebar.radio("Go to:", ["Home", "Resume", "Projects", "Dropout Predic
 # HOME PAGE
 # ---------------------------------------------------------------
 if page == "Home":
-    st.title("👋 Welcome — I'm Gbolahan (Abdul) Oladosu")
+    st.title("Welcome — I'm Gbolahan (Abdul) Oladosu")
 
     # Optional headshot
     col1, col2 = st.columns([1, 3])
@@ -170,15 +170,15 @@ if page == "Home":
     st.markdown("---")
 
     # Highlight main project
-    st.subheader("📌 Featured Project")
+    st.subheader("Featured Project")
     st.markdown("""
     ### **Clinical Trial Dropout Prediction System**
     A machine learning platform that predicts early participant dropout using  
     demographic, clinical, and engagement variables.  
     Built with **XGBoost**, **scikit-learn**, **SHAP**, and deployed via **Streamlit**.
 
-    👉 Navigate to **Projects** to learn more.  
-    👉 Try the **Dropout Predictor** to see the model in action.
+     Navigate to **Projects** to learn more.  
+     Try the **Dropout Predictor** to see the model in action.
     """)
 
     st.markdown("---")
