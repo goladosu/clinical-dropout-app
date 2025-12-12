@@ -131,10 +131,6 @@ def load_model():
 
 pipeline = load_model()
 
-# DEBUG: Show working directory and file contents
-st.write("📂 Current working directory:", os.getcwd())
-st.write("📄 Files in this directory:", os.listdir("."))
-st.write("🗂 Assets folder:", os.listdir("assets") if os.path.exists("assets") else "assets NOT found")
 
 
 # ---------------------------------------------------------------
@@ -176,31 +172,93 @@ if page == "Home":
 elif page == "Resume":
     st.title("Resume")
 
-    st.header("Education")
-    st.write("""
-    - M.S. Data Science – Eastern University
-    - M.S. Biomedical Science – Roosevelt University
-    """)
+    # ----------------------------------------
+    # Download Resume (PDF)
+    # ----------------------------------------
+    resume_path = "Resume.pdf"  # <--- YOUR FILE NAME
 
-    st.header("Work Experience")
-    st.write("""
-    **Clinical Laboratory Scientist – Insight Hospital, Chicago**
-    - High-complexity diagnostic testing
-    - Quality control & lab operations
-    - Applying data-driven thinking
-    """)
-
-    st.header("Skills")
-    st.write("""
-    - Python, R, SQL
-    - scikit-learn, XGBoost, SHAP
-    - Machine learning interpretability
-    - Clinical and healthcare analytics
-    """)
-    if os.path.exists("assets/project_image.png"):
-        st.image("assets/project_image.png", caption="Clinical Trial Analytics Dashboard")
+    if os.path.exists(resume_path):
+        with open(resume_path, "rb") as f:
+            st.download_button(
+                label="📄 Download Resume (PDF)",
+                data=f,
+                file_name="Abdul_Oladosu_Resume.pdf",
+                mime="application/pdf",
+            )
     else:
-        st.info("Project image coming soon.")
+        st.info("Resume PDF not found. Please upload Resume.pdf to the app directory.")
+
+
+
+    # ----------------------------------------
+    # Contact Section
+    # ----------------------------------------
+    st.subheader("Contact")
+    st.write("**Location:** Chicago, IL")
+    st.write("**Email:** goladosurahman@gmail.com")
+    st.write("**Mobile:** 443-712-3471")
+    st.write("**Portfolio:** https://clinical-dropout-app-m6i3x2gqrmc7hrf3kwy2za.streamlit.app/")
+    st.write("**GitHub:** https://github.com/goladosu/Abdul-s_Portfolio")
+
+    st.markdown("---")
+
+    # ----------------------------------------
+    # Education
+    # ----------------------------------------
+    st.subheader("Education")
+    st.markdown("""
+    - **M.S. Data Science**, Eastern University – St. Davids, PA *(Expected Dec 2025)*  
+    - **M.S. Biomedical Science**, Roosevelt University – Chicago, IL *(2021–2022)*  
+    - **B.Sc. Biomedical Science**, Gulf Medical University – Ajman, UAE *(2014–2018)*  
+    """)
+
+    st.markdown("---")
+
+    # ----------------------------------------
+    # Technical Skills
+    # ----------------------------------------
+    st.subheader("Technical Skills")
+    st.markdown("""
+    - **Languages:** Python, R, SQL  
+    - **Libraries & Frameworks:** Pandas, NumPy, Scikit-learn, Matplotlib, ggplot  
+    - **Tools & Platforms:** Power BI, Tableau, Excel, Google Colab, Jupyter Notebook, PyCharm  
+    - **Core Competencies:** Machine Learning, Data Analysis, Predictive Modeling, SHAP, EDA  
+    - **Soft Skills:** Communication, Leadership, Stakeholder Management, Rapport Building  
+    """)
+
+    st.markdown("---")
+
+    # ----------------------------------------
+    # Professional Experience
+    # ----------------------------------------
+    st.subheader("Professional Experience")
+    st.markdown("""
+    **Business Associate – Insight Hospital, Chicago, IL**  
+    *Apr 2023 – Feb 2025*  
+    - Conducted market research and competitive analysis, uncovering **10+ strategic insights** that informed hospital-level decision-making.  
+    - Produced data-driven reports and presentations for leadership, enabling clear communication and actionable recommendations.  
+    - Supported regulatory compliance, policy adherence, and operational alignment with industry standards.  
+    """)
+
+    st.markdown("---")
+
+    # ----------------------------------------
+    # Projects
+    # ----------------------------------------
+    st.subheader("Projects")
+
+    st.markdown("""
+    ### Clinical Trial Dropout Prediction System (Capstone Project)
+    - Built an end-to-end ML system predicting early participant dropout using demographic, clinical, and behavioral trial data.  
+    - Developed a domain-informed preprocessing pipeline including clinical logic checks, missingness indicators, imputation, scaling, and SMOTE.  
+    - Evaluated Logistic Regression, Random Forest, and XGBoost; deployed **XGBoost (ROC-AUC: 0.969)**.  
+    - Created a Streamlit web application with participant-level risk scores, SHAP explanations, and CRA-focused Low/Moderate/High risk guidance.
+
+    ### Student Grade Prediction Model
+    - Engineered ML models (Linear Regression, Lasso, SVR) to predict final student grades using early-term indicators.  
+    - Achieved **RMSE ≈ 2.2** and **R² = 0.76** with Linear Regression.  
+    - Identified key factors (attendance, study habits, prior failures) enabling early academic intervention strategies.
+    """)
 
 
 # ---------------------------------------------------------------
@@ -226,6 +284,58 @@ elif page == "Projects":
 elif page == "Dropout Predictor":
     st.title("Clinical Trial Dropout Predictor")
 
+    # ----------------------------------------
+    # Model performance summary (test set)
+    # ----------------------------------------
+    st.markdown("### Model Performance (Held-out Test Set)")
+
+    with st.expander("View model comparison", expanded=False):
+        perf_df = pd.DataFrame([
+            {
+                "Model": "Logistic Regression",
+                "Accuracy": 0.750,
+                "ROC-AUC": 0.861,
+                "Precision (Dropout)": 0.570,
+                "Recall (Dropout)": 0.760,
+                "F1 (Dropout)": 0.650,
+            },
+            {
+                "Model": "Random Forest",
+                "Accuracy": 0.930,
+                "ROC-AUC": 0.965,
+                "Precision (Dropout)": 0.899,
+                "Recall (Dropout)": 0.870,
+                "F1 (Dropout)": 0.884,
+            },
+            {
+                "Model": "XGBoost (deployed)",
+                "Accuracy": 0.927,
+                "ROC-AUC": 0.969,
+                "Precision (Dropout)": 0.889,
+                "Recall (Dropout)": 0.870,
+                "F1 (Dropout)": 0.879,
+            },
+        ])
+
+        st.dataframe(
+            perf_df.style.format({
+                "Accuracy": "{:.3f}",
+                "ROC-AUC": "{:.3f}",
+                "Precision (Dropout)": "{:.3f}",
+                "Recall (Dropout)": "{:.3f}",
+                "F1 (Dropout)": "{:.3f}",
+            }),
+            use_container_width=True,
+        )
+
+        st.caption(
+            "Metrics computed on a held-out test set of 300 participants. "
+            "This app currently uses the XGBoost model for predictions."
+        )
+
+    # ----------------------------------------
+    # Input form for a single participant
+    # ----------------------------------------
     if pipeline is None:
         st.error("Model not loaded. See messages above for details (missing file or load error).")
     else:
@@ -285,21 +395,57 @@ elif page == "Dropout Predictor":
             prob = model.predict_proba(X_prep)[0, 1]
             pred = model.predict(X_prep)[0]
 
+            # ----------------------------------------
+            # Prediction summary
+            # ----------------------------------------
             st.subheader("Prediction")
             st.write(f"**Dropout Probability:** `{prob:.3f}`")
             st.write(f"**Predicted Class:** {'Dropout' if pred == 1 else 'Completer'}")
 
-            # 4. SHAP feature importance for this prediction
+            # ----------------------------------------
+            # How to interpret this prediction (CRA view)
+            # ----------------------------------------
+            if prob < 0.30:
+                risk_level = "Low"
+                st.success(
+                    "Risk level: **Low**\n\n"
+                    "- The model does **not** see strong signs of early dropout.\n"
+                    "- Continue standard follow-up per protocol.\n"
+                )
+            elif prob < 0.60:
+                risk_level = "Moderate"
+                st.warning(
+                    "Risk level: **Moderate**\n\n"
+                    "- The participant has **some** risk factors for early dropout.\n"
+                    "- Consider additional check-ins, adherence counseling, or reminders.\n"
+                )
+            else:
+                risk_level = "High"
+                st.error(
+                    "Risk level: **High**\n\n"
+                    "- The model detects **several features** associated with early dropout.\n"
+                    "- Flag this participant for proactive retention outreach "
+                    "(e.g., phone call, coordinator/nurse consultation).\n"
+                )
+
+            st.caption(
+                "This risk score is based on data available up to Visit 2. "
+                "It is designed to support, not replace, clinical judgment and "
+                "conversations with the participant."
+            )
+
+            # ----------------------------------------
+            # SHAP feature importance for this prediction
+            # ----------------------------------------
             st.subheader("Feature Importance (SHAP)")
 
             try:
-                # TreeExplainer for tree-based models
                 explainer = shap.TreeExplainer(model)
                 shap_values = explainer.shap_values(X_prep)
 
-                # For binary classification, shap_values is a list [class0, class1]
+                # For binary classification, shap_values may be a list [class0, class1]
                 if isinstance(shap_values, list):
-                    sv = shap_values[1][0]  # focus on "dropout" class
+                    sv = shap_values[1][0]  # focus on dropout class
                 else:
                     sv = shap_values[0]
 
@@ -307,7 +453,6 @@ elif page == "Dropout Predictor":
                 try:
                     feature_names = preprocess.get_feature_names_out()
                 except Exception:
-                    # Fallback if preprocess doesn't support get_feature_names_out
                     feature_names = np.array([f"Feature {i}" for i in range(len(sv))])
 
                 # Sort features by absolute SHAP value (top 10)
@@ -315,7 +460,6 @@ elif page == "Dropout Predictor":
                 top_vals = sv[idx]
                 top_features = feature_names[idx]
 
-                # Bar chart with real feature names
                 fig, ax = plt.subplots()
                 colors = ["#1f77b4" if v < 0 else "#d62728" for v in top_vals]
                 ax.barh(top_features, top_vals, color=colors)
