@@ -220,7 +220,6 @@ elif page == "Projects":
     **Note:** All MSDS classwork remains private for academic integrity.
     """)
 
-
 # ---------------------------------------------------------------
 # DROPOUT PREDICTOR PAGE
 # ---------------------------------------------------------------
@@ -253,6 +252,7 @@ elif page == "Dropout Predictor":
         communication_score = st.slider("Communication Score", 0.0, 100.0, 60.0)
 
         if st.button("Predict Dropout Risk"):
+            # 1. Build a one-row DataFrame for this participant
             input_df = pd.DataFrame([{
                 "age": age,
                 "sex": sex,
@@ -268,9 +268,10 @@ elif page == "Dropout Predictor":
                 "visit2_adherence_rate": visit2_adherence_rate,
                 "visit2_AE_count": visit2_AE_count,
                 "missed_appointments": missed_appointments,
-                "communication_score": communication_score
+                "communication_score": communication_score,
             }])
 
+            # 2. Run through the same pipeline components used in training
             clinical_logic = pipeline.named_steps["clinical_logic"]
             missing_flags = pipeline.named_steps["missing_flags"]
             preprocess = pipeline.named_steps["preprocess"]
@@ -280,6 +281,7 @@ elif page == "Dropout Predictor":
             X_flags = missing_flags.transform(X_logic)
             X_prep = preprocess.transform(X_flags)
 
+            # 3. Predict
             prob = model.predict_proba(X_prep)[0, 1]
             pred = model.predict(X_prep)[0]
 
@@ -287,47 +289,40 @@ elif page == "Dropout Predictor":
             st.write(f"**Dropout Probability:** `{prob:.3f}`")
             st.write(f"**Predicted Class:** {'Dropout' if pred == 1 else 'Completer'}")
 
-            # SHAP
-            explainer = shap.TreeExplainer(model)
-            shap_values = explainer.shap_values(X_prep)
+            # 4. SHAP feature importance for this prediction
+            st.subheader("Feature Importance (SHAP)")
 
+            try:
+                # TreeExplainer for tree-based models
+                explainer = shap.TreeExplainer(model)
+                shap_values = explainer.shap_values(X_prep)
 
+                # For binary classification, shap_values is a list [class0, class1]
+                if isinstance(shap_values, list):
+                    sv = shap_values[1][0]  # focus on "dropout" class
+                else:
+                    sv = shap_values[0]
 
-st.subheader("Feature Importance (SHAP)")
+                # Try to get meaningful feature names from the preprocess step
+                try:
+                    feature_names = preprocess.get_feature_names_out()
+                except Exception:
+                    # Fallback if preprocess doesn't support get_feature_names_out
+                    feature_names = np.array([f"Feature {i}" for i in range(len(sv))])
 
-try:
-    # Use the same input row used for prediction
-    input_df = participant_df  # <-- use your existing dataframe
+                # Sort features by absolute SHAP value (top 10)
+                idx = np.argsort(np.abs(sv))[::-1][:10]
+                top_vals = sv[idx]
+                top_features = feature_names[idx]
 
-    # Extract model (if pipeline has a final named step)
-    if "model" in pipeline.named_steps:
-        model = pipeline.named_steps["model"]
-    else:
-        model = pipeline  # fallback
+                # Bar chart with real feature names
+                fig, ax = plt.subplots()
+                colors = ["#1f77b4" if v < 0 else "#d62728" for v in top_vals]
+                ax.barh(top_features, top_vals, color=colors)
+                ax.set_xlabel("SHAP value (impact on dropout prediction)")
+                ax.set_title("Top Features Influencing This Prediction")
+                ax.invert_yaxis()
+                st.pyplot(fig)
 
-    # Build SHAP explainer
-    explainer = shap.Explainer(model)
-
-    # Compute SHAP values for this row
-    shap_values = explainer(input_df)
-
-    # Pull values & feature names
-    shap_vals = shap_values[0].values
-    feature_names = input_df.columns
-
-    # Sort features by absolute importance
-    sorted_idx = np.argsort(np.abs(shap_vals))[::-1][:10]  # top 10
-
-    top_vals = shap_vals[sorted_idx]
-    top_features = feature_names[sorted_idx]
-
-    # Make a SHAP bar chart
-    fig, ax = plt.subplots()
-    ax.barh(top_features, top_vals)
-    ax.set_xlabel("SHAP value (impact on model output)")
-    ax.set_title("Top Feature Contributions for This Prediction")
-    ax.invert_yaxis()
-    st.pyplot(fig)
-
-except Exception as e:
-    st.warning(f"Could not render SHAP feature importance: {e}")
+            except Exception as e:
+                st.warning(f"Could not render SHAP feature importance: {e}")
