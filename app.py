@@ -122,7 +122,6 @@ def load_model():
 
     try:
         pipeline = joblib.load(model_path)
-        st.success("✅ Model loaded successfully.")
         return pipeline
     except Exception as e:
         st.error(f"❌ Failed to load model: {e}")
@@ -143,28 +142,64 @@ page = st.sidebar.radio("Go to:", ["Home", "Resume", "Projects", "Dropout Predic
 # ---------------------------------------------------------------
 # HOME PAGE
 # ---------------------------------------------------------------
+# ---------------------------------------------------------------
+# HOME PAGE
+# ---------------------------------------------------------------
 if page == "Home":
-    st.title("Welcome – Gbolahan Oladosu")
-    
-    if os.path.exists("assets/headshot.jpg"):
-        st.image("assets/headshot.jpg", width=220)
-    else:
-        st.info("Headshot image coming soon.")
+    st.title("👋 Welcome — I'm Gbolahan (Abdul) Oladosu")
 
-    st.subheader("Clinical Laboratory Scientist → Aspiring Clinical Data Scientist")
+    # Optional headshot
+    col1, col2 = st.columns([1, 3])
+    with col1:
+        if os.path.exists("assets/headshot.jpg"):
+            st.image("assets/headshot.jpg", width=200)
+        else:
+            st.info("Headshot coming soon!")
 
+    with col2:
+        st.markdown("""
+        ### Clinical Laboratory Scientist → Aspiring Clinical Data Scientist  
+
+        I specialize in applying machine learning to **clinical trial analytics**,  
+        **healthcare data**, and **patient retention modeling**.
+
+        My goal is to leverage my biomedical science background and data science  
+        training to improve outcomes across healthcare and life sciences.
+        """)
+
+    st.markdown("---")
+
+    # Highlight main project
+    st.subheader("📌 Featured Project")
     st.markdown("""
-    I am **Gbolahan Abdul-Rahman Oladosu**, currently working as a Clinical
-    Laboratory Scientist and pursuing my M.S. in Data Science at Eastern University.
+    ### **Clinical Trial Dropout Prediction System**
+    A machine learning platform that predicts early participant dropout using  
+    demographic, clinical, and engagement variables.  
+    Built with **XGBoost**, **scikit-learn**, **SHAP**, and deployed via **Streamlit**.
 
-    My interests include:
-
-    - Clinical trial analytics
-    - Dropout prediction and patient retention
-    - Healthcare & EHR machine learning
-    - Model interpretability and fairness
+    👉 Navigate to **Projects** to learn more.  
+    👉 Try the **Dropout Predictor** to see the model in action.
     """)
 
+    st.markdown("---")
+
+    # Quick navigation buttons
+    st.subheader("📁 Quick Links")
+    colA, colB, colC = st.columns(3)
+
+    with colA:
+        st.link_button("📄 View Resume", "#", help="Go to the Resume page")
+    with colB:
+        st.link_button("📊 Explore Projects", "#", help="Go to the Projects page")
+    with colC:
+        st.link_button("🧪 Dropout Predictor", "#", help="Try the ML model")
+
+    st.markdown("---")
+
+    st.caption(
+        "This portfolio showcases my work in clinical analytics, machine learning, "
+        "and applied data science."
+    )
 
 # ---------------------------------------------------------------
 # RESUME PAGE
@@ -267,16 +302,32 @@ elif page == "Resume":
 elif page == "Projects":
     st.title("Projects")
 
-    st.subheader("Clinical Trial Dropout Prediction (Capstone Project)")
-    st.write("""
-    - Predicts whether a participant will drop out based on early-visit data
-    - Models: Logistic Regression, Random Forest, XGBoost
-    - Interpretability using SHAP
+    # ----------------------------------------
+    # Clinical Trial Dropout Prediction (Capstone)
+    # ----------------------------------------
+    st.subheader("Clinical Trial Dropout Prediction System (Capstone Project)")
+    st.markdown("""
+    - Developed an end-to-end machine learning pipeline to predict early participant dropout using demographic, clinical, and engagement data.  
+    - Designed a domain-driven preprocessing workflow: clinical logic checks, missingness indicators, imputation, scaling, and SMOTE.  
+    - Evaluated Logistic Regression, Random Forest, and XGBoost; deployed **XGBoost (ROC-AUC: 0.969)**.  
+    - Built a Streamlit app with participant-level risk scoring, SHAP explanations, and CRA-focused decision support.
+    """)
+    
+    st.markdown("---")
+
+    # ----------------------------------------
+    # Student Grade Prediction Model
+    # ----------------------------------------
+    st.subheader("Student Grade Prediction Model")
+    st.markdown("""
+    - Built regression models (Linear Regression, Lasso, SVR) to predict final student grades using early-term academic and behavioral predictors.  
+    - Achieved **RMSE ≈ 2.2** and **R² = 0.76** with Linear Regression.  
+    - Identified key drivers such as attendance, study time, and prior failures, enabling early academic intervention strategies.
     """)
 
-    st.info("""
-    **Note:** All MSDS classwork remains private for academic integrity.
-    """)
+    st.markdown("---")
+
+
 
 # ---------------------------------------------------------------
 # DROPOUT PREDICTOR PAGE
