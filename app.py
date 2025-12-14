@@ -219,7 +219,7 @@ def page_home():
             """
 **Clinical Laboratory Scientist** → **Aspiring Clinical Data Scientist** (Healthcare & Clinical Trials)
 
-I’m currently completing my **M.S. in Data Science (DTSC691)** and building an end-to-end machine learning project focused on **clinical trial participant retention**.
+I’m currently completing my **M.S. in Data Science ** and building an end-to-end machine learning project (DTSC691) focused on **clinical trial participant retention**.
 
 **Professional interests**
 - Clinical trial analytics (retention, adherence, operational quality)
@@ -259,13 +259,14 @@ def page_resume():
             """
 - **M.S. Data Science** — Eastern University *(in progress)*
 - **M.S. Biomedical Science** — Roosevelt University
+- **B.S. Biomedical Science** - Gulf Medical University
 """
         )
 
         st.subheader("Work Experience")
         st.markdown(
             """
-**Clinical Laboratory Scientist — Insight Hospital & Medical Center (Chicago)**
+**Clinical Laboratory Scientist — Saint Mary Hospital (Chicago)**
 - Perform high-complexity diagnostic testing and QC in a hospital lab environment
 - Collaborate with clinical teams to ensure accurate and timely results
 - Apply data-driven thinking to workflow, quality, and operational improvement
@@ -276,7 +277,9 @@ def page_resume():
         st.markdown(
             """
 - **Python:** pandas, numpy, scikit-learn, XGBoost, SHAP
-- **Data:** SQL, EDA, feature engineering, evaluation metrics (ROC-AUC, F1)
+-**SQL
+-**R
+- **Data:** EDA, feature engineering, Model training, evaluation metrics (ROC-AUC, F1, Confusion Matrix)
 - **Deployment:** Streamlit, model serialization (joblib/pickle)
 """
         )
@@ -305,8 +308,7 @@ def page_projects():
         """
 This page highlights selected projects.
 
-**Academic integrity note:** If you include MSDS course assignments, keep them in **private** repositories or private pages.
-"""
+
     )
 
     st.subheader("Clinical Trial Participant Dropout Prediction (DTSC691)")
@@ -322,9 +324,7 @@ This page highlights selected projects.
     st.subheader("Other Projects")
     st.markdown(
         """
-- Healthcare analytics mini-projects (EDA + modeling)
-- SQL / data management projects
-- Time series and forecasting exercises
+- Student grade prediction ML project
 """
     )
 
