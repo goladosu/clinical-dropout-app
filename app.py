@@ -307,16 +307,15 @@ def page_projects():
     st.markdown(
         """
 This page highlights selected projects.
-
-
+"""
     )
 
     st.subheader("Clinical Trial Participant Dropout Prediction (DTSC691)")
     st.markdown(
         """
-- Goal: predict **dropout risk after Visit 2** using demographic, clinical, and engagement features
-- Models explored: Logistic Regression, Random Forest, **XGBoost (final)**
-- Interpretability: **SHAP** explanations + error analysis (false positives/negatives)
+- Goal: predict **dropout risk after Visit 2** using demographic, clinical, and engagement features  
+- Models explored: Logistic Regression, Random Forest, **XGBoost (final)**  
+- Interpretability: **SHAP** explanations + error analysis (false positives/negatives)  
 - Deployment: this Streamlit web app
 """
     )
@@ -324,9 +323,10 @@ This page highlights selected projects.
     st.subheader("Other Projects")
     st.markdown(
         """
-- Student grade prediction ML project
+- Student Grade Prediction (Machine Learning)
 """
     )
+
 
 
 def page_dropout_project():
