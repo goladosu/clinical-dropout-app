@@ -263,26 +263,33 @@ def page_resume():
 """
         )
 
-        st.subheader("Work Experience")
-        st.markdown(
-            """
-**Clinical Laboratory Scientist — Saint Mary Hospital (Chicago)**
-- Perform high-complexity diagnostic testing and QC in a hospital lab environment
-- Collaborate with clinical teams to ensure accurate and timely results
-- Apply data-driven thinking to workflow, quality, and operational improvement
-"""
-        )
+st.subheader("Work Experience")
+st.markdown(
+    """
+**Clinical Laboratory Scientist — Saint Mary Hospital (Chicago)**  
+- Perform high-complexity diagnostic testing and QC in a hospital lab environment  
+- Collaborate with clinical teams to ensure accurate and timely results  
+- Apply data-driven thinking to workflow, quality, and operational improvement  
 
-        st.subheader("Technical Skills")
-        st.markdown(
-            """
-- **Python:** pandas, numpy, scikit-learn, XGBoost, SHAP
--**SQL
--**R
-- **Data:** EDA, feature engineering, Model training, evaluation metrics (ROC-AUC, F1, Confusion Matrix)
-- **Deployment:** Streamlit, model serialization (joblib/pickle)
+**Business Associate — Insight Hospital** *(April 2023 – February 2025)*  
+- Conducted in-depth market research and analysis, identifying **10+ actionable trends** that informed strategic decision-making  
+- Produced comprehensive reports and presentations summarizing findings and recommendations, enabling clear stakeholder communication  
+- Managed policy adherence and regulatory compliance, ensuring alignment with healthcare and industry standards  
 """
-        )
+)
+
+
+st.subheader("Technical Skills")
+st.markdown(
+    """
+- **Programming:** Python, SQL, R  
+- **Machine Learning:** scikit-learn, XGBoost, SHAP  
+- **Data Analysis:** EDA, feature engineering, model training  
+- **Evaluation:** ROC-AUC, F1-score, Precision/Recall, Confusion Matrix  
+- **Deployment:** Streamlit, model serialization (joblib / pickle)  
+"""
+)
+
 
         st.subheader("Links")
         st.markdown("**GitHub:** https://github.com/goladosu")
