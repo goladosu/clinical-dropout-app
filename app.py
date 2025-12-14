@@ -251,45 +251,43 @@ I enjoy problem-solving, learning new tools in Python/R/SQL, and translating tec
 def page_resume():
     st.title("Resume")
 
-    left, right = st.columns([2, 1], vertical_alignment="top")
+    left, _ = st.columns([1, 0.01])  # keep layout simple, no image column
 
     with left:
         st.subheader("Education")
         st.markdown(
             """
-- **M.S. Data Science** — Eastern University *(in progress)*
-- **M.S. Biomedical Science** — Roosevelt University
-- **B.S. Biomedical Science** - Gulf Medical University
+- **M.S. Data Science** — Eastern University *(in progress)*  
+- **M.S. Biomedical Science** — Roosevelt University  
+- **B.S. Biomedical Science** — Gulf Medical University  
 """
         )
 
-st.subheader("Work Experience")
-st.markdown(
-    """
+        st.subheader("Work Experience")
+        st.markdown(
+            """
 **Clinical Laboratory Scientist — Saint Mary Hospital (Chicago)**  
 - Perform high-complexity diagnostic testing and QC in a hospital lab environment  
 - Collaborate with clinical teams to ensure accurate and timely results  
 - Apply data-driven thinking to workflow, quality, and operational improvement  
 
 **Business Associate — Insight Hospital** *(April 2023 – February 2025)*  
-- Conducted in-depth market research and analysis, identifying **10+ actionable trends** that informed strategic decision-making  
-- Produced comprehensive reports and presentations summarizing findings and recommendations, enabling clear stakeholder communication  
-- Managed policy adherence and regulatory compliance, ensuring alignment with healthcare and industry standards  
+- Conducted in-depth market research and analysis, identifying **10+ actionable trends**  
+- Produced reports and presentations enabling data-driven decision-making  
+- Managed policy adherence and regulatory compliance with healthcare standards  
 """
-)
+        )
 
-
-st.subheader("Technical Skills")
-st.markdown(
-    """
+        st.subheader("Technical Skills")
+        st.markdown(
+            """
 - **Programming:** Python, SQL, R  
 - **Machine Learning:** scikit-learn, XGBoost, SHAP  
 - **Data Analysis:** EDA, feature engineering, model training  
 - **Evaluation:** ROC-AUC, F1-score, Precision/Recall, Confusion Matrix  
 - **Deployment:** Streamlit, model serialization (joblib / pickle)  
 """
-)
-
+        )
 
         st.subheader("Links")
         st.markdown("**GitHub:** https://github.com/goladosu")
@@ -297,15 +295,13 @@ st.markdown(
 
         if os.path.exists("Resume.pdf"):
             with open("Resume.pdf", "rb") as f:
-                st.download_button("⬇️ Download Resume (PDF)", f, file_name="Resume.pdf")
+                st.download_button(
+                    "⬇️ Download Resume (PDF)",
+                    f,
+                    file_name="Resume.pdf"
+                )
         else:
             st.caption("(Optional) Add Resume.pdf to your repo root to enable a download button.")
-
-    with right:
-        if os.path.exists("assets/project_image.png"):
-            st.image("assets/project_image.png", caption="Clinical Trial Analytics", use_container_width=True)
-        else:
-            st.info("Add an image at assets/project_image.png (optional)")
 
 
 def page_projects():
