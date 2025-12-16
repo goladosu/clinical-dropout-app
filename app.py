@@ -1,29 +1,34 @@
 import os
 import sys
+# Standard library imports
+from typing import List, Optional
 
 import numpy as np
 import pandas as pd
-import streamlit as st
 import joblib
-import shap
 import matplotlib.pyplot as plt
 
+# ML and Streamlit components
 from sklearn.base import BaseEstimator, TransformerMixin
+import shap
+import streamlit as st
 
 
-# ============================================================
-# 1) Custom Transformers (MUST exist for unpickling)
-# ============================================================
+# ==============================================================================
+# Custom Pipeline Components (Names MUST match the pickled model!)
+# ==============================================================================
 
 class ClinicalConsistencyTransformer(BaseEstimator, TransformerMixin):
-    """Enforces trial protocol consistency.
-
-    - Age cleaning: clamp age < min_age to min_age (adult-only trial).
-                 AND clamp age > max_age to max_age (clinically plausible upper bound).
-    - Visit logic: if ALL Visit 1 fields are missing, clear ALL Visit 2 fields.
-    """
-
-    def __init__(self, visit1_cols=None, visit2_cols=None, age_col="age", min_age=18, max_age=90):
+    # Rule enforcement step: check data logic before processing.
+    
+    def __init__(self, 
+                 visit1_cols: Optional[List[str]] = None,
+                 visit2_cols: Optional[List[str]] = None,
+                 age_col: str = "age",
+                 min_age: int = 18, 
+                 max_age: int = 90):
+        
+        # Default columns for V1 and V2
         self.visit1_cols = visit1_cols or [
             "visit1_symptom_score",
             "visit1_adherence_rate",
@@ -34,6 +39,7 @@ class ClinicalConsistencyTransformer(BaseEstimator, TransformerMixin):
             "visit2_adherence_rate",
             "visit2_AE_count",
         ]
+        
         self.age_col = age_col
         self.min_age = min_age
         self.max_age = max_age
@@ -44,29 +50,30 @@ class ClinicalConsistencyTransformer(BaseEstimator, TransformerMixin):
     def transform(self, X, y=None):
         X = X.copy()
 
-        # Age cleaning
+        # Clamp age to a sensible 18-90 range, don't drop rows.
         if self.age_col in X.columns:
             X.loc[X[self.age_col] < self.min_age, self.age_col] = self.min_age
             X.loc[X[self.age_col] > self.max_age, self.age_col] = self.max_age
 
-        # Visit logic: only when ALL Visit 1 vars are missing
+        # Visit dependency logic: V2 can't exist if V1 is completely blank.
         v1_cols = [c for c in self.visit1_cols if c in X.columns]
         v2_cols = [c for c in self.visit2_cols if c in X.columns]
+        
         if v1_cols and v2_cols:
+            # Mask where ALL V1 fields are NaN
             no_v1_mask = X[v1_cols].isna().all(axis=1)
+            
+            # Wipe V2 data if V1 is missing
             X.loc[no_v1_mask, v2_cols] = np.nan
 
         return X
 
 
 class MissingIndicatorAdder(BaseEstimator, TransformerMixin):
-    """Adds *_missing indicator columns (0/1) for selected columns.
+    # Adds the `_missing` flags needed for XGBoost to learn from missingness.
 
-    NOTE: Keep constructor clone-safe (do not modify params here).
-    """
-
-    def __init__(self, columns):
-        self.columns = columns  # do NOT wrap with list() here
+    def __init__(self, columns: List[str]):
+        self.columns = columns
 
     def fit(self, X, y=None):
         return self
@@ -75,31 +82,34 @@ class MissingIndicatorAdder(BaseEstimator, TransformerMixin):
         X = X.copy()
         for col in self.columns:
             if col in X.columns:
+                # 1 if missing, 0 otherwise
                 X[f"{col}_missing"] = X[col].isna().astype(int)
         return X
 
 
-# ------------------------------------------------------------
-# Make unpickling robust across Colab / local / Streamlit Cloud
-# ------------------------------------------------------------
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Fix unpickling errors (often needed for Streamlit/notebooks)
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 sys.modules["main"] = sys.modules[__name__]
 sys.modules["__main__"] = sys.modules[__name__]
 
 
-# ============================================================
-# 2) App config + model loader
-# ============================================================
+# ==============================================================================
+# App config + model loader
+# ==============================================================================
 
 st.set_page_config(page_title="Gbolahan Oladosu | DTSC691 Project", layout="wide")
 
 MODEL_PATH = "xgb_dropout_pipeline.pkl"
 
-# Use your tuned threshold from notebook here:
-CHOSEN_THRESHOLD = 0.45  # <-- replace with your printed chosen_threshold
+# Deployment cutoff, set by evaluation notebook
+CHOSEN_THRESHOLD = 0.30
 
 
 @st.cache_resource
 def load_pipeline():
+    # Only load the model once, cache it.
     if not os.path.exists(MODEL_PATH):
         return None, f"Model file not found: {MODEL_PATH}"
     try:
@@ -112,9 +122,9 @@ def load_pipeline():
 pipeline, load_err = load_pipeline()
 
 
-# ============================================================
-# 3) Navigation state
-# ============================================================
+# ==============================================================================
+# Navigation state
+# ==============================================================================
 
 PAGES = ["Home", "Resume", "Projects", "Dropout Project"]
 
@@ -130,89 +140,98 @@ page = st.sidebar.radio(
 st.session_state.page = page
 
 
-# ============================================================
-# 4) Helpers
-# ============================================================
+# ==============================================================================
+# Helpers
+# ==============================================================================
 
 def risk_bucket(p: float) -> str:
-    # Bucket anchored around your operational threshold
-    if p < CHOSEN_THRESHOLD * 0.7:
+    # Assign risk level based on probability p.
+    # High risk means >= CHOSEN_THRESHOLD
+    if p < 0.15:
         return "Low"
-    if p < CHOSEN_THRESHOLD:
+    elif p < CHOSEN_THRESHOLD:  # 0.30
         return "Moderate"
-    return "High"
+    else:
+        return "High"
 
 
 def build_feature_names_from_preprocessor(preprocess, numeric_features, categorical_features):
-    """Rebuild transformed feature names for SHAP plots."""
+    # Reconstruct feature names after OHE for SHAP display.
     num_names = list(numeric_features)
 
     try:
+        # Get OHE names from the 'cat' step
         cat_encoder = preprocess.named_transformers_["cat"].named_steps["encoder"]
         cat_names = list(cat_encoder.get_feature_names_out(categorical_features))
     except Exception:
-        cat_names = []
+        cat_names = [] # Handle if encoding step isn't available
 
-    feat_names = num_names + cat_names
-    return np.array(feat_names, dtype=object)
+    return np.array(num_names + cat_names, dtype=object)
 
 
 def get_shap_for_single_row(pipe, input_df):
-    """Returns (prob, pred, shap_values_row, feature_names) for one participant."""
-    # Probability (always from predict_proba)
+    # Runs the single input row through the pipeline steps to generate SHAP values.
+    # Returns (prob, pred, shap_values_row, feature_names)
+    
+    # Run prediction first
     prob = float(pipe.predict_proba(input_df)[0, 1])
-    # Class decision using tuned threshold
     pred = int(prob >= CHOSEN_THRESHOLD)
 
-    # Prepare data for SHAP (must match what the model sees)
+    # Extract components for manual transformation
     clinical = pipe.named_steps.get("clinical_logic")
     flags = pipe.named_steps.get("missing_flags")
     preprocess = pipe.named_steps.get("preprocess")
     model = pipe.named_steps.get("model")
 
+    # Transform data through custom steps
     X_logic = clinical.transform(input_df) if clinical else input_df
     X_flags = flags.transform(X_logic) if flags else X_logic
+    
+    # Final preprocessing (scaling, encoding, etc.)
     X_prep = preprocess.transform(X_flags)
 
-    # Dense conversion (helps SHAP + plotting)
+    # Ensure it's a dense matrix for SHAP
     try:
         X_prep_dense = X_prep.toarray()
     except Exception:
         X_prep_dense = X_prep
 
-    # Infer numeric feature list from ColumnTransformer definition
+    # Try to extract the feature names list
     try:
         num_cols = preprocess.transformers_[0][2]
         numeric_features = list(num_cols)
     except Exception:
+        # Generic names if extraction fails
         numeric_features = [f"x{i}" for i in range(X_prep_dense.shape[1])]
 
-    # Build feature names
     try:
+        # Rebuild full list for plot labels
         feature_names = build_feature_names_from_preprocessor(
             preprocess=preprocess,
             numeric_features=numeric_features,
-            categorical_features=["sex", "race"],
+            categorical_features=["sex", "race"], 
         )
         if feature_names.shape[0] != X_prep_dense.shape[1]:
             feature_names = np.array([f"x{i}" for i in range(X_prep_dense.shape[1])], dtype=object)
     except Exception:
         feature_names = np.array([f"x{i}" for i in range(X_prep_dense.shape[1])], dtype=object)
 
+    # Compute SHAP
     explainer = shap.TreeExplainer(model)
     shap_values = explainer.shap_values(X_prep_dense)
 
+    # Get the values for class 1 (Dropout)
     if isinstance(shap_values, list):
-        shap_row = np.array(shap_values[0][0]).ravel()
+        shap_row = np.array(shap_values[1][0]).ravel()
     else:
         shap_row = np.array(shap_values[0]).ravel()
 
     return prob, pred, shap_row, feature_names
 
 
-# ============================================================
-# 5) Pages
-# ============================================================
+# ==============================================================================
+# Pages
+# ==============================================================================
 
 def page_home():
     st.title("Welcome — I'm Gbolahan (Abdul) Oladosu")
@@ -236,9 +255,6 @@ I’m completing my **M.S. in Data Science** and building an end-to-end machine 
 - Clinical trial analytics (retention, adherence, operational quality)
 - Healthcare machine learning + interpretable AI (SHAP)
 - Responsible/fair modeling across demographic subgroups
-
-**A bit personal**
-I enjoy problem-solving, learning new tools in Python/R/SQL, and translating technical findings into decisions teams can act on.
 """
         )
 
@@ -274,25 +290,25 @@ def page_resume():
     st.subheader("Work Experience")
     st.markdown(
         """
-**Clinical Laboratory Scientist — Saint Mary Hospital (Chicago)**  
-- Perform high-complexity diagnostic testing and QC in a hospital lab environment  
-- Collaborate with clinical teams to ensure accurate and timely results  
-- Apply data-driven thinking to workflow, quality, and operational improvement  
+**Clinical Laboratory Scientist — Saint Mary Hospital (Chicago)**  
+- Perform high-complexity diagnostic testing and QC in a hospital lab environment  
+- Collaborate with clinical teams to ensure accurate and timely results  
+- Apply data-driven thinking to workflow, quality, and operational improvement  
 
-**Business Associate — Insight Hospital** *(April 2023 – February 2025)*  
-- Conducted in-depth market research and analysis, identifying **10+ actionable trends**  
-- Produced reports and presentations enabling data-driven decision-making  
-- Managed policy adherence and regulatory compliance with healthcare standards  
+**Business Associate — Insight Hospital** *(April 2023 – February 2025)*  
+- Conducted in-depth market research and analysis, identifying **10+ actionable trends**  
+- Produced reports and presentations enabling data-driven decision-making  
+- Managed policy adherence and regulatory compliance with healthcare standards  
 """
     )
 
     st.subheader("Technical Skills")
     st.markdown(
         """
-- **Programming:** Python, SQL, R  
-- **Machine Learning:** scikit-learn, XGBoost, SHAP  
-- **Data Analysis:** EDA, feature engineering, model training  
-- **Evaluation:** ROC-AUC, PR-AUC, F1-score, Precision/Recall, Confusion Matrix  
+- **Programming:** Python, SQL, R  
+- **Machine Learning:** scikit-learn, XGBoost, SHAP  
+- **Data Analysis:** EDA, feature engineering, model training  
+- **Evaluation:** ROC-AUC, PR-AUC, F1-score, Precision/Recall, Confusion Matrix  
 - **Deployment:** Streamlit, model serialization (joblib / pickle)
 """
     )
@@ -313,15 +329,14 @@ def page_resume():
 
 def page_projects():
     st.title("Projects")
-
     st.markdown("This page highlights selected projects.")
 
     st.subheader("Clinical Trial Participant Dropout Prediction (DTSC691)")
     st.markdown(
         """
-- Goal: predict **dropout risk after Visit 2** using demographic, clinical, and engagement features  
-- Models explored: Logistic Regression, Random Forest, **XGBoost (final)**  
-- Interpretability: **SHAP** explanations + error analysis (false positives/negatives)  
+- Goal: predict **dropout risk after Visit 2** using demographic, clinical, and engagement features  
+- Models explored: Logistic Regression, Random Forest, **XGBoost (final)**  
+- Interpretability: **SHAP** explanations + error analysis (false positives/negatives)  
 - Deployment: this Streamlit web app
 """
     )
@@ -346,13 +361,7 @@ Clinical trials often lose participants before the primary endpoint. Dropout can
 and introduce bias. This model estimates the **probability of dropout** using information collected up to **Visit 2** so teams
 can intervene early.
 
-**Operational threshold:** `{CHOSEN_THRESHOLD:.2f}` (tuned in model evaluation)
-
-### What the model uses
-- Demographics: age, sex, race
-- Clinical status: BMI, baseline lab score, disease severity, prior treatments
-- Engagement & safety signals: adherence rates, adverse event counts, missed appointments, communication score
-- Clinical consistency rules (adult-only ages; no Visit 2 without Visit 1; ages capped at 90)
+**Operational threshold:** `{CHOSEN_THRESHOLD:.2f}`
 """
     )
 
@@ -363,10 +372,9 @@ can intervene early.
         c1, c2, c3 = st.columns(3)
 
         with c1:
-            # UPDATED: max_value now 90 to match transformer upper bound
             age = st.number_input("Age", min_value=18, max_value=90, value=55)
             sex = st.selectbox("Sex", ["Male", "Female"])
-            race = st.selectbox("Race", ["White", "Black", "Asian", "Hispanic", "Other"])
+            race = st.selectbox("Race", ["White", "Black", "Asian", "Other"])
             BMI = st.slider("BMI", 15.0, 45.0, 27.0)
 
         with c2:
@@ -391,7 +399,7 @@ can intervene early.
     if not submitted:
         return
 
-    # Build input row
+    # Create the DataFrame from inputs
     input_df = pd.DataFrame([{
         "age": age,
         "sex": sex,
@@ -410,11 +418,10 @@ can intervene early.
         "communication_score": communication_score,
     }])
 
-    # Convert adherence from percent (0–100) → proportion (0–1) if your model was trained on 0–1
+    # Scale percentage adherence to proportion (0.0 to 1.0)
     for col in ["visit1_adherence_rate", "visit2_adherence_rate"]:
         input_df[col] = input_df[col] / 100.0
 
-    # Predict + SHAP
     try:
         prob, pred, shap_row, feat_names = get_shap_for_single_row(pipeline, input_df)
     except Exception as e:
@@ -426,14 +433,14 @@ can intervene early.
 
     bucket = risk_bucket(prob)
     if bucket == "Low":
-        st.success(f"Dropout probability: **{prob:.3f}**  → **{bucket} risk**")
+        st.success(f"Dropout probability: **{prob:.3f}**  → **{bucket} risk**")
     elif bucket == "Moderate":
-        st.warning(f"Dropout probability: **{prob:.3f}**  → **{bucket} risk**")
+        st.warning(f"Dropout probability: **{prob:.3f}**  → **{bucket} risk**")
     else:
-        st.error(f"Dropout probability: **{prob:.3f}**  → **{bucket} risk**")
+        st.error(f"Dropout probability: **{prob:.3f}**  → **{bucket} risk**")
 
     st.write(f"Predicted class (thresholded): {'Dropout (1)' if pred == 1 else 'Completer (0)'}")
-    st.caption("Interpretation: probability is a risk estimate, not a guarantee.")
+    st.caption("This is a risk estimate, not a guarantee.")
 
     st.subheader("Top drivers of this prediction (SHAP)")
     order = np.argsort(np.abs(shap_row))[::-1][:10]
@@ -453,9 +460,9 @@ can intervene early.
         st.dataframe(input_df, use_container_width=True)
 
 
-# ============================================================
-# 6) Router
-# ============================================================
+# ==============================================================================
+# Router
+# ==============================================================================
 
 if page == "Home":
     page_home()
