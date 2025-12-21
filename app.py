@@ -20,14 +20,15 @@ import streamlit as st
 
 class ClinicalConsistencyTransformer(BaseEstimator, TransformerMixin):
     # Rule enforcement step: check data logic before processing.
-    
-    def __init__(self, 
-                 visit1_cols: Optional[List[str]] = None,
-                 visit2_cols: Optional[List[str]] = None,
-                 age_col: str = "age",
-                 min_age: int = 18, 
-                 max_age: int = 90):
-        
+
+    def __init__(
+        self,
+        visit1_cols: Optional[List[str]] = None,
+        visit2_cols: Optional[List[str]] = None,
+        age_col: str = "age",
+        min_age: int = 18,
+        max_age: int = 90
+    ):
         # Default columns for V1 and V2
         self.visit1_cols = visit1_cols or [
             "visit1_symptom_score",
@@ -39,7 +40,7 @@ class ClinicalConsistencyTransformer(BaseEstimator, TransformerMixin):
             "visit2_adherence_rate",
             "visit2_AE_count",
         ]
-        
+
         self.age_col = age_col
         self.min_age = min_age
         self.max_age = max_age
@@ -58,11 +59,11 @@ class ClinicalConsistencyTransformer(BaseEstimator, TransformerMixin):
         # Visit dependency logic: V2 can't exist if V1 is completely blank.
         v1_cols = [c for c in self.visit1_cols if c in X.columns]
         v2_cols = [c for c in self.visit2_cols if c in X.columns]
-        
+
         if v1_cols and v2_cols:
             # Mask where ALL V1 fields are NaN
             no_v1_mask = X[v1_cols].isna().all(axis=1)
-            
+
             # Wipe V2 data if V1 is missing
             X.loc[no_v1_mask, v2_cols] = np.nan
 
@@ -99,7 +100,7 @@ sys.modules["__main__"] = sys.modules[__name__]
 # App config + model loader
 # ==============================================================================
 
-st.set_page_config(page_title="Gbolahan Oladosu | DTSC691 Project", layout="wide")
+st.set_page_config(page_title="Abdul Oladosu", layout="wide")
 
 MODEL_PATH = "xgb_dropout_pipeline.pkl"
 
@@ -126,7 +127,7 @@ pipeline, load_err = load_pipeline()
 # Navigation state
 # ==============================================================================
 
-PAGES = ["Home", "Resume", "Projects", "Dropout Project"]
+PAGES = ["Home", "Resume", "Projects", "Dropout Model", "Grade Prediction Model"]
 
 if "page" not in st.session_state:
     st.session_state.page = "Home"
@@ -164,7 +165,7 @@ def build_feature_names_from_preprocessor(preprocess, numeric_features, categori
         cat_encoder = preprocess.named_transformers_["cat"].named_steps["encoder"]
         cat_names = list(cat_encoder.get_feature_names_out(categorical_features))
     except Exception:
-        cat_names = [] # Handle if encoding step isn't available
+        cat_names = []  # Handle if encoding step isn't available
 
     return np.array(num_names + cat_names, dtype=object)
 
@@ -172,7 +173,7 @@ def build_feature_names_from_preprocessor(preprocess, numeric_features, categori
 def get_shap_for_single_row(pipe, input_df):
     # Runs the single input row through the pipeline steps to generate SHAP values.
     # Returns (prob, pred, shap_values_row, feature_names)
-    
+
     # Run prediction first
     prob = float(pipe.predict_proba(input_df)[0, 1])
     pred = int(prob >= CHOSEN_THRESHOLD)
@@ -186,7 +187,7 @@ def get_shap_for_single_row(pipe, input_df):
     # Transform data through custom steps
     X_logic = clinical.transform(input_df) if clinical else input_df
     X_flags = flags.transform(X_logic) if flags else X_logic
-    
+
     # Final preprocessing (scaling, encoding, etc.)
     X_prep = preprocess.transform(X_flags)
 
@@ -209,7 +210,7 @@ def get_shap_for_single_row(pipe, input_df):
         feature_names = build_feature_names_from_preprocessor(
             preprocess=preprocess,
             numeric_features=numeric_features,
-            categorical_features=["sex", "race"], 
+            categorical_features=["sex", "race"],
         )
         if feature_names.shape[0] != X_prep_dense.shape[1]:
             feature_names = np.array([f"x{i}" for i in range(X_prep_dense.shape[1])], dtype=object)
@@ -234,44 +235,67 @@ def get_shap_for_single_row(pipe, input_df):
 # ==============================================================================
 
 def page_home():
-    st.title("Welcome — I'm Gbolahan (Abdul) Oladosu")
+    st.title("Welcome — I'm Abdul Oladosu")
 
-    c1, c2 = st.columns([1, 3], vertical_alignment="center")
-    with c1:
-        if os.path.exists("assets/headshot.jpg"):
-            st.image("assets/headshot.jpg", width=220)
-        else:
-            st.info("Add a headshot at assets/headshot.jpg")
+    st.markdown(
+        """
+**Clinical Laboratory Scientist → Aspiring Data Scientist**
 
-    with c2:
-        st.markdown(
-            """
-**Clinical Laboratory Scientist** → **Aspiring Clinical Data Scientist** (Healthcare & Clinical Trials)
+This is a space where I build and explore **data-driven systems**—from analytics to machine learning.
 
-I’m completing my **M.S. in Data Science** and building an end-to-end machine learning project (DTSC691) focused on
-**clinical trial participant retention**.
+I’m interested in problems where data is imperfect, decisions matter, and solutions need to be **clear, explainable, and useful**. My work focuses on turning raw data into insights and tools that support real-world decision-making across different domains.
 
-**Professional interests**
-- Clinical trial analytics (retention, adherence, operational quality)
-- Healthcare machine learning + interpretable AI (SHAP)
-- Responsible/fair modeling across demographic subgroups
-"""
-        )
+---
+
+### What You’ll Find Here
+
+Hands-on projects that demonstrate:
+- Applied analytics and machine learning  
+- End-to-end workflows, from data to deployment  
+- Thoughtful evaluation and interpretation of results  
+
+---
+
+### How I Approach Data Work
+
+I focus on:
+- Understanding the data before modeling  
+- Making assumptions explicit  
+- Explaining results clearly to non-technical audiences  
+- Considering how outputs are actually used in practice  
+
+Interpretability, transparency, and responsible use of data are themes that run across my projects.
+
+---
+
+### Explore
+
+Use the navigation to explore projects, interact with models, and see how data science ideas translate into working applications.
+        """
+    )
 
     st.divider()
     st.subheader("Quick Links")
-    a, b, c = st.columns(3)
+    a, b, c, d = st.columns(4)
+
     with a:
         if st.button("📄 View Resume", use_container_width=True):
             st.session_state.page = "Resume"
             st.rerun()
+
     with b:
         if st.button("📊 Projects", use_container_width=True):
             st.session_state.page = "Projects"
             st.rerun()
+
     with c:
-        if st.button("🧪 Dropout Project", use_container_width=True):
-            st.session_state.page = "Dropout Project"
+        if st.button("🧪 Dropout Model", use_container_width=True):
+            st.session_state.page = "Dropout Model"
+            st.rerun()
+
+    with d:
+        if st.button("🧑🏻‍🏫 Grade Model", use_container_width=True):
+            st.session_state.page = "Grade Prediction Model"
             st.rerun()
 
 
@@ -281,36 +305,36 @@ def page_resume():
     st.subheader("Education")
     st.markdown(
         """
-- **M.S. Data Science** — Eastern University *(in progress)*
+- **M.S. Data Science** — Eastern University
 - **M.S. Biomedical Science** — Roosevelt University
 - **B.S. Biomedical Science** — Gulf Medical University
-"""
+        """
     )
 
     st.subheader("Work Experience")
     st.markdown(
         """
-**Clinical Laboratory Scientist — Saint Mary Hospital (Chicago)**  
-- Perform high-complexity diagnostic testing and QC in a hospital lab environment  
-- Collaborate with clinical teams to ensure accurate and timely results  
-- Apply data-driven thinking to workflow, quality, and operational improvement  
+**Clinical Laboratory Scientist — Saint Mary Hospital (Chicago)**  
+- Perform high-complexity diagnostic testing and QC in a hospital lab environment  
+- Collaborate with clinical teams to ensure accurate and timely results  
+- Apply data-driven thinking to workflow, quality, and operational improvement  
 
-**Business Associate — Insight Hospital** *(April 2023 – February 2025)*  
-- Conducted in-depth market research and analysis, identifying **10+ actionable trends**  
-- Produced reports and presentations enabling data-driven decision-making  
-- Managed policy adherence and regulatory compliance with healthcare standards  
-"""
+**Business Associate — Insight Hospital** *(April 2023 – February 2025)*  
+- Conducted in-depth market research and analysis, identifying **10+ actionable trends**  
+- Produced reports and presentations enabling data-driven decision-making  
+- Managed policy adherence and regulatory compliance with healthcare standards  
+        """
     )
 
     st.subheader("Technical Skills")
     st.markdown(
         """
-- **Programming:** Python, SQL, R  
-- **Machine Learning:** scikit-learn, XGBoost, SHAP  
-- **Data Analysis:** EDA, feature engineering, model training  
-- **Evaluation:** ROC-AUC, PR-AUC, F1-score, Precision/Recall, Confusion Matrix  
+- **Programming:** Python, SQL, R  
+- **Machine Learning:** scikit-learn, XGBoost, SHAP  
+- **Data Analysis:** EDA, feature engineering, model training  
+- **Evaluation:** ROC-AUC, PR-AUC, F1-score, Precision/Recall, Confusion Matrix  
 - **Deployment:** Streamlit, model serialization (joblib / pickle)
-"""
+        """
     )
 
     st.subheader("Links")
@@ -329,20 +353,27 @@ def page_resume():
 
 def page_projects():
     st.title("Projects")
-    st.markdown("This page highlights selected projects.")
+    st.markdown("This page highlights projects.")
 
-    st.subheader("Clinical Trial Participant Dropout Prediction (DTSC691)")
+    st.subheader("Clinical Trial Participant Dropout Prediction")
     st.markdown(
         """
-- Goal: predict **dropout risk after Visit 2** using demographic, clinical, and engagement features  
-- Models explored: Logistic Regression, Random Forest, **XGBoost (final)**  
-- Interpretability: **SHAP** explanations + error analysis (false positives/negatives)  
+- Goal: predict **dropout risk after Visit 2** using demographic, clinical, and engagement features  
+- Models explored: Logistic Regression, Random Forest, **XGBoost (final)**  
+- Interpretability: **SHAP** explanations + error analysis (false positives/negatives)  
 - Deployment: this Streamlit web app
-"""
+        """
     )
 
-    st.subheader("Other Projects")
-    st.markdown("- Student Grade Prediction (Machine Learning)")
+    st.subheader("Student Grade Prediction")
+    st.markdown(
+        """
+- Built predictive models (Linear Regression, Lasso, SVR) to forecast students’ final academic performance using early-term grades, attendance, study habits, and background data.
+- Achieved strong predictive accuracy (RMSE ≈ 2.2, R² = 0.76).
+- Designed a two-stage early-warning system enabling timely interventions before mid-term assessments.
+- Identified key drivers of performance, including attendance patterns, study time, and prior outcomes, to support data-driven improvement strategies.
+        """
+    )
 
 
 def page_dropout_project():
@@ -362,7 +393,7 @@ and introduce bias. This model estimates the **probability of dropout** using in
 can intervene early.
 
 **Operational threshold:** `{CHOSEN_THRESHOLD:.2f}`
-"""
+        """
     )
 
     st.divider()
@@ -433,11 +464,11 @@ can intervene early.
 
     bucket = risk_bucket(prob)
     if bucket == "Low":
-        st.success(f"Dropout probability: **{prob:.3f}**  → **{bucket} risk**")
+        st.success(f"Dropout probability: **{prob:.3f}**  → **{bucket} risk**")
     elif bucket == "Moderate":
-        st.warning(f"Dropout probability: **{prob:.3f}**  → **{bucket} risk**")
+        st.warning(f"Dropout probability: **{prob:.3f}**  → **{bucket} risk**")
     else:
-        st.error(f"Dropout probability: **{prob:.3f}**  → **{bucket} risk**")
+        st.error(f"Dropout probability: **{prob:.3f}**  → **{bucket} risk**")
 
     st.write(f"Predicted class (thresholded): {'Dropout (1)' if pred == 1 else 'Completer (0)'}")
     st.caption("This is a risk estimate, not a guarantee.")
@@ -460,6 +491,11 @@ can intervene early.
         st.dataframe(input_df, use_container_width=True)
 
 
+def page_grade_project():
+    st.title("Student Grade Prediction — Deployed Model")
+    st.info("In progress 🚧")
+
+
 # ==============================================================================
 # Router
 # ==============================================================================
@@ -470,5 +506,7 @@ elif page == "Resume":
     page_resume()
 elif page == "Projects":
     page_projects()
-elif page == "Dropout Project":
+elif page == "Dropout Model":
     page_dropout_project()
+elif page == "Grade Prediction Model":
+    page_grade_project()
